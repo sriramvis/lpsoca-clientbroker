@@ -15,6 +15,15 @@ void Wifi_init(String Networkname, String password);
 static void sendTask(void *arg);
 
 
+#define CAL_FACTOR (F_CPU/7000)
+static void delayMS(uint32_t millis) {
+  uint32_t iterations = millis * CAL_FACTOR;
+  uint32_t i;
+  for(i = 0; i < iterations; ++i) {
+    asm volatile("nop\n\t");
+  }
+}
+
 static void sendTask(void *arg) {
   SerialUSB.println("sendTask started");
 
@@ -31,7 +40,7 @@ static void sendTask(void *arg) {
     SerialUSB.println(*(toSend.port));
     buffMsgs[counter] = toSend;
 
-    if(counter == BUFF_SIZE - 1) {
+    if(counter >= BUFF_SIZE - 1) {
       counter = 0; // reset counter
       SerialUSB.println("About to call jsonAndSend");
       jsonAndSend(buffMsgs, *(toSend.pdid), *(toSend.appid));
@@ -82,7 +91,7 @@ void clientBuffer::publish(String port, char *Message)
   payload.message = new String(Message);
 
 
-  if(xQueueSendToBack(xSendQueue, &payload, 0) != pdTRUE) {
+  if(xQueueSendToBack(xSendQueue, &payload, portMAX_DELAY) != pdTRUE) {
     SerialUSB.println("Unable to place on Queue. Queue full");
     // Deal with this case
     // If this happens then the queue is full
@@ -99,7 +108,7 @@ String connectandsend(String data,String path,String servername){
   int i=0;
   char c;
   
-  Serial1.println("AT+CIPSTART=\"TCP\",\"" + servername + "\",80");
+  Serial1.println("AT+CIPSTART=\"TCP\",\"" + servername + "\",3001");
   //SerialUSB.println("sdfsfdds");
  
   while(true){
@@ -116,8 +125,8 @@ String connectandsend(String data,String path,String servername){
       }
   }
   i=0;
-  //delay(150);
-  String t1 = "POST "+path+" HTTP/1.1\r\nHost:"+servername+":80"+"\r\nContent-Type:application/json\r\nContent-Length:"+String(data.length())+"\r\n";
+  delayMS(150);
+  String t1 = "POST "+path+" HTTP/1.1\r\nHost:"+servername+":3001"+"\r\nContent-Type:application/json\r\nContent-Length:"+String(data.length())+"\r\n";
   //String t3 = "{\"data\":[[0,1],[1,3],[2,3],[3,3],[4,3],[5,0],[6,1],[7,2],[8,3],[9,3],[10,3],[11,5],[12,11],[13,5],[14,6],[15,7],[16,7],[17,7],[18,7],[19,7],[20,7],[21,7],[22,7],[23,7],[24,7],[25,7],[26,7],[27,7],[28,7],[29,7],[30,7],[31,1],[32,3],[33,3],[34,3],[35,3],[36,0],[37,1],[38,2],[39,3],[40,3],[41,3],[42,5],[43,11],[44,5],[14,6],[15,7],[16,7],[17,7],[18,7],[19,7],[20,7],[21,7],[22,7],[23,7],[24,7],[25,7],[26,7],[27,7],[28,7],[29,7],[30,7],[0,1],[1,3],[2,3],[3,3],[4,3],[5,0],[6,1],[7,2],[8,3],[9,3],[10,3],[11,5],[12,11],[13,5],[14,6],[15,7],[16,7],[17,7],[18,7],[19,7],[20,7],[21,7],[22,7],[23,7],[24,7],[25,7],[26,7],[27,7],[28,7],[29,7],[30,7],[0,1],[1,3],[2,3],[3,3],[4,3],[5,0],[6,1],[7,2],[8,3],[9,3],[10,3],[11,5],[12,11],[13,5],[14,6],[15,7],[16,7],[17,7],[18,7],[19,7],[20,7],[21,7],[22,7],[23,7],[24,7],[25,7],[26,7],[27,7],[28,7],[29,7],[30,7],[0,1],[1,3],[2,3],[3,3],[4,3],[5,0],[6,1],[7,2],[8,3]],\"sampleRate\":44000}";
   SerialUSB.println(data.length());
   SerialUSB.println(t1.length()+data.length()+4);
@@ -198,14 +207,15 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
   root["pdid"] = pdid;
   root["appid"] = appid;
 
-  JsonArray& port = root.createNestedArray("port");
-  JsonArray& msg = root.createNestedArray("message");
+  // JsonArray& port = root.createNestedArray("port");
+  JsonArray& msg = root.createNestedArray("msg");
 
   for (int i = 0; i < BUFF_SIZE; i++) {
+    JsonArray& m = msg.createNestedArray();
     SerialUSB.println(*(buffMsgs[i].port));
     SerialUSB.println(*(buffMsgs[i].message));
-    port.add(*(buffMsgs[i].port));
-    msg.add(*(buffMsgs[i].message));
+    m.add(*(buffMsgs[i].port));
+    m.add(*(buffMsgs[i].message));
   }
 
   char buffer[JBUFF_SIZE];
@@ -215,10 +225,14 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
   SerialUSB.println("About to send json up");
   SerialUSB.println(buffer);
 
-  String response = connectandsend(String(buffer), "/power/45", "54.191.239.210");
+  // String response = connectandsend(String(buffer), "/power/45", "54.191.239.210");
+  String endpoint = String("/up/");
+  endpoint.concat(pdid);
+  endpoint.concat("/");
+  endpoint.concat(appid);
+  String response = connectandsend(String(buffer), endpoint, "10.215.1.12");
 
   // Free here
-
   for (int i = 0; i < BUFF_SIZE; i++) {
     delete (buffMsgs[i].port);
     delete (buffMsgs[i].message);
@@ -243,26 +257,29 @@ void jsonDecode(char json[]) {
   if (!root.success()) {
     SerialUSB.println("parseObject() in json decoder failed");
     return;
+  } else {
+    SerialUSB.println("parsed Object:");
+    root.printTo(SerialUSB);
   }
 
-  JsonArray& ports = root["port"].asArray();
-  JsonArray& messages = root["message"].asArray();
+  // JsonArray& ports = root["port"].asArray();
+  // JsonArray& messages = root["message"].asArray();
 
-  String pdid = root["pdid"];
-  String appid = root["appid"];
+  // String pdid = root["pdid"];
+  // String appid = root["appid"];
 
-  SerialUSB.println(pdid);
-  SerialUSB.println(appid);
+  // SerialUSB.println(pdid);
+  // SerialUSB.println(appid);
 
-  for (JsonArray::iterator it=ports.begin(); it!=ports.end(); ++it) {
-    String val = *it;
-    SerialUSB.println(val);
-  }
+  // for (JsonArray::iterator it=ports.begin(); it!=ports.end(); ++it) {
+  //   String val = *it;
+  //   SerialUSB.println(val);
+  // }
 
-  for (JsonArray::iterator it=messages.begin(); it!=messages.end(); ++it) {
-    String msg = *it;
-    SerialUSB.println(msg);
-  }
+  // for (JsonArray::iterator it=messages.begin(); it!=messages.end(); ++it) {
+  //   String msg = *it;
+  //   SerialUSB.println(msg);
+  // }
 
   // Need to create hard copies of these extracted items before sending them off
 }
@@ -271,20 +288,20 @@ void Wifi_init(String Networkname,String password){
   SerialUSB.println("1");
   char a;
   int i=0;
-  /*pinMode(40,OUTPUT);
+  pinMode(40,OUTPUT);
   pinMode(36,OUTPUT);
   digitalWrite(40,HIGH);
   digitalWrite(36,HIGH);
-  //delay(50);
+  delayMS(50);
   digitalWrite(36,LOW);
-  //delay(500);
+  delayMS(500);
   digitalWrite(36,HIGH);
-  //delay(500);*/
+  delayMS(500);
  
   SerialUSB.println("1");
   Serial1.begin(115200);
   SerialUSB.println("Serial1 begin");
-  //delay(1000);
+  delayMS(1000);
   Serial1.println("AT");
   while(true){
    if(Serial1.available()){
@@ -401,7 +418,7 @@ void Wifi_init(String Networkname,String password){
   }
  again:
  i=0;
- //delay(150);
+ delayMS(150);
  Serial1.println("AT+CWJAP=\""+Networkname+"\",\""+password+"\"");
  while(true){
    if(Serial1.available()){
