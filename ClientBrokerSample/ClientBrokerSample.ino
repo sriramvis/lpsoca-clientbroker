@@ -9,11 +9,15 @@
   char *msg5 = "You just brought piss to a shit fight";
 
 static void test(void *arg) {
-  clientBuffer::getInstance()->publish("42", msg1);
-  clientBuffer::getInstance()->publish("42", msg2);
-  clientBuffer::getInstance()->publish("42", msg3);
-  clientBuffer::getInstance()->publish("42", msg4);
-  clientBuffer::getInstance()->publish("42", msg5);
+  while(1){
+    clientBuffer::getInstance()->publish("1", msg1);
+    clientBuffer::getInstance()->publish("2", msg2);
+    clientBuffer::getInstance()->publish("3", msg3);
+    clientBuffer::getInstance()->publish("1", msg4);
+    clientBuffer::getInstance()->publish("3", msg5);
+
+    vTaskDelay(10000);
+  }
 }
 
 void setup() {
@@ -25,8 +29,7 @@ void setup() {
 
   while(!SerialUSB);
 
-
-  clientBuffer::getInstance()->initialize("42", "43");
+  clientBuffer::getInstance()->initialize("42", "43", "ssid", "password");
 
   xTaskCreate(test, NULL, 500, NULL, 1, NULL);
   vTaskStartScheduler();
