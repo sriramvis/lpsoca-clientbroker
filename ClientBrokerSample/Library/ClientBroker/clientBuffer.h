@@ -18,6 +18,7 @@ public:
 	static clientBuffer *getInstance();
 	void initialize(String appID, String powerID, String net, String pass);
 	void publish(String port, char *message);
+	void subscribe(int port, Queuehandle_t queue);
 
 protected:
 	clientBuffer();
