@@ -9,13 +9,20 @@
   char *msg5 = "Silicon Valley";
 
 static void test(void *arg) {
-  clientBuffer::getInstance()->publish("42", msg1);
-  clientBuffer::getInstance()->publish("42", msg2);
-  clientBuffer::getInstance()->publish("42", msg3);
-  clientBuffer::getInstance()->publish("42", msg4);
+  clientBuffer::getInstance()->publish(42, msg1);
+  clientBuffer::getInstance()->publish(42, msg2);
+  clientBuffer::getInstance()->publish(42, msg3);
+  clientBuffer::getInstance()->publish(42, msg4);
   SerialUSB.println("About to publish last message");
-  clientBuffer::getInstance()->publish("42", msg5);
+  clientBuffer::getInstance()->publish(42, msg5);
   SerialUSB.println("Published Last Message");
+  clientBuffer::getInstance()->publish(42, msg1);
+  clientBuffer::getInstance()->publish(42, msg2);
+  clientBuffer::getInstance()->publish(42, msg3);
+  clientBuffer::getInstance()->publish(42, msg4);
+  SerialUSB.println("About to publish last message");
+  clientBuffer::getInstance()->publish(42, msg5);
+  SerialUSB.println("Published Last Message"); 
   while(1);
 }
 
@@ -29,7 +36,7 @@ void setup() {
   while(!SerialUSB);
 
 
-  clientBuffer::getInstance()->initialize("42", "43", "PowerDue", "lowpower");
+  clientBuffer::getInstance()->initialize("42", "43", "lpsoc", "lpsoc2016");
 
   xTaskCreate(test, NULL, 500, NULL, 1, NULL);
   vTaskStartScheduler();
