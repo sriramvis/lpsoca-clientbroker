@@ -105,7 +105,9 @@ void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
   // Add another method that Will can call 
   // Create register when they call this
 
-  queueSubArray[port] = queueSub;
+  queueSubArray[port] = queueSub; //queueSub handle is created by Will/Cef
+  connectandsend("register", "/register/_appID/_powerID", "10.42.0.1"); //find out exact format from Vinod
+
 
 }
 
@@ -173,12 +175,14 @@ void jsonDecode(char json[]) {
   for (JsonArray::iterator it=msgs.begin(); it!=msgs.end(); ++it) {
     JsonVariant val = *it;
     JsonArray& a = val.asArray();
-    int test = a[0];
-    String val2 = a[1];
-    //String *test42 = new String (val2);
-    //String val = *it;
-    SerialUSB.println(test);
-    SerialUSB.println(val2);
+    int port = a[0];
+    //switch-case block for port number here
+    String message_port = a[1];
+    String *message = new String (message_port); //Will be deleted by Cef/Will
+    //buffers for string data here
+    xQueueSendToBack(queueSubArray[port], message, portMAX_DELAY);
+    //SerialUSB.println(port);
+    //SerialUSB.println(message_port);
   }
 
 
