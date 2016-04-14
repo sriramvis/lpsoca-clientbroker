@@ -6,8 +6,6 @@
 #include "ArduinoJson.h"
 
 typedef struct payload_s {
-	//String *pdid;
-	//String *appid;
 	String *port;
 	String *message;
 } payload_t;
