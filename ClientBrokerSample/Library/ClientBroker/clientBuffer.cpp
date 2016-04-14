@@ -374,6 +374,15 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
 
 }
 
+inline void notifyPortQueue(int port, String message){
+  if(port < MAX_PORTS && _receiveQueues[port] != NULL){
+    String *m = new String(message);
+     if(xQueueSendToBack(_receiveQueues[port], &m, portMAX_DELAY) != pdTRUE ){
+        // fail to notify port 
+     }
+  }
+}
+
 void jsonDecode(char json[]) {
   SerialUSB.println("Entering Json Decoding");
   SerialUSB.println(json);
@@ -397,9 +406,12 @@ void jsonDecode(char json[]) {
       if(m.size() == 2){ // has both port and message
         int port = m[0];
         String message = m[1];
+        notifyPortQueue(port, message);
+        /*
         SerialUSB.print("port: ");
         SerialUSB.println(port);
         SerialUSB.println("message: " + message);
+        */
       }
     }
 
