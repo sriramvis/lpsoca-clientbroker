@@ -6,8 +6,8 @@
 #include "ArduinoJson.h"
 
 typedef struct payload_s {
-	String *pdid;
-	String *appid;
+	//String *pdid;
+	//String *appid;
 	String *port;
 	String *message;
 } payload_t;
@@ -17,8 +17,8 @@ class clientBuffer {
 public:
 	static clientBuffer *getInstance();
 	void initialize(String appID, String powerID, String net, String pass);
-	void publish(String port, char *message);
-	void subscribe(int port, Queuehandle_t queue);
+	void publish(int port, char *message);
+	void subscribe(int port, QueueHandle_t queueSub);
 
 protected:
 	clientBuffer();

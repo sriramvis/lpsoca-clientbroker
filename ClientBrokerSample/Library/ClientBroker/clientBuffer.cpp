@@ -4,7 +4,7 @@
 #define QUEUE_SIZE 10
 #define BUFF_SIZE 5 // #number of messages to buffer before sending
 #define STACK_SIZE 800
-#define JBUFF_SIZE 500 // Buffer size for JSON decoding
+#define JBUFF_SIZE 400 // Buffer size for JSON decoding
 
 QueueHandle_t xSendQueue = NULL;
 QueueHandle_t xReceiveQueue = NULL;
@@ -12,7 +12,7 @@ QueueHandle_t xReceiveQueue = NULL;
 static QueueHandle_t queueSubArray[NUM_PORTS_MAX];
 
 void jsonDecode(char json[]);
-void jsonAndSend(payload_t buffMsgs[], String pdid, String appid);
+void jsonAndSend(payload_t buffMsgs[]);
 String connectandsend(String data,String path,String servername);
 void Wifi_init(String Networkname, String password);
 static void sendTask(void *arg);
@@ -37,7 +37,7 @@ static void sendTask(void *arg) {
 		if(counter == BUFF_SIZE - 1) {
 			counter = 0; // reset counter
       SerialUSB.println("About to call jsonAndSend");
-			jsonAndSend(buffMsgs, *(toSend.pdid), *(toSend.appid));
+			jsonAndSend(buffMsgs);
 			// Send the messages
 		} else {
       SerialUSB.println("Increasing Counter");
@@ -74,18 +74,18 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
 	//xReceiveQueue = xQueueCreate(QUEUE_SIZE, sizeof(String));
   Wifi_init(net, pass);
 	xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
-  initQueueSubArray();
+  //initQueueSubArray();
 	// Create send and Receive Tasks	
 }
 
 
-void clientBuffer::publish(String port, char *Message)
+void clientBuffer::publish(int port, char *Message)
 {
 	payload_t payload;
 
 	payload.port = new String(port);
-	payload.appid = _appID;
-	payload.pdid = _powerID;
+	//payload.appid = _appID;
+	//payload.pdid = _powerID;
 	payload.message = new String(Message);
 
 
@@ -99,6 +99,9 @@ void clientBuffer::publish(String port, char *Message)
 }
 
 void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
+  // Queue takes char*
+  // Make sure char* doesn't get overwritten before its read
+  // Add another method that Will can call 
 
   queueSubArray[port] = queueSub;
 
@@ -139,9 +142,9 @@ String connectandsend(String data,String path,String servername){
   SerialUSB.println("t1:");
   SerialUSB.println(t1);
   while(true){
-       if(Serial1.available()){
-    a=Serial1.read();
-    SerialUSB.print(a);
+    if(Serial1.available()){
+      a=Serial1.read();
+      SerialUSB.print(a);
     }
     if(a=='>'){
       break;
@@ -205,20 +208,19 @@ String connectandsend(String data,String path,String servername){
   return str;
 }
 
-void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
-  StaticJsonBuffer<500> jsonBuffer;
+void jsonAndSend(payload_t buffMsgs[]) {
+  StaticJsonBuffer<JBUFF_SIZE> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
-  root["pdid"] = pdid;
-  root["appid"] = appid;
+  //root["pdid"] = pdid;
+  //root["appid"] = appid;
 
-  JsonArray& port = root.createNestedArray("port");
-  JsonArray& msg = root.createNestedArray("message");
+  //JsonArray& port = root.createNestedArray("port");
+  JsonArray& msg = root.createNestedArray("msg");
 
   for (int i = 0; i < BUFF_SIZE; i++) {
-    SerialUSB.println(*(buffMsgs[i].port));
-    SerialUSB.println(*(buffMsgs[i].message));
-    port.add(*(buffMsgs[i].port));
-    msg.add(*(buffMsgs[i].message));
+    JsonArray &m = msg.createNestedArray();
+    m.add(*(buffMsgs[i].port));
+    m.add(*(buffMsgs[i].message));
   }
 
   char buffer[JBUFF_SIZE];
@@ -240,8 +242,9 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
   SerialUSB.println("Received Response. About to decode");
 
   response.toCharArray(buffer, JBUFF_SIZE);
+  SerialUSB.println(buffer);
 
-  jsonDecode(buffer);
+  //jsonDecode(buffer);
 
 }
 
