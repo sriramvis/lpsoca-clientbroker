@@ -1,5 +1,6 @@
 #include "clientBuffer.h"
 
+#define NUM_PORTS_MAX 16
 #define QUEUE_SIZE 10
 #define BUFF_SIZE 5 // #number of messages to buffer before sending
 #define STACK_SIZE 800
@@ -7,6 +8,8 @@
 
 QueueHandle_t xSendQueue = NULL;
 QueueHandle_t xReceiveQueue = NULL;
+
+static QueueHandle_t queueSubArray[NUM_PORTS_MAX];
 
 void jsonDecode(char json[]);
 void jsonAndSend(payload_t buffMsgs[], String pdid, String appid);
@@ -45,6 +48,8 @@ static void sendTask(void *arg) {
 
 }
 
+
+
 clientBuffer::clientBuffer()
 {
 	_appID = NULL;
@@ -69,8 +74,10 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
 	//xReceiveQueue = xQueueCreate(QUEUE_SIZE, sizeof(String));
   Wifi_init(net, pass);
 	xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
+  initQueueSubArray();
 	// Create send and Receive Tasks	
 }
+
 
 void clientBuffer::publish(String port, char *Message)
 {
@@ -89,6 +96,12 @@ void clientBuffer::publish(String port, char *Message)
 		// Should never happen though
 	}
   SerialUSB.println("Published on Queue");
+}
+
+void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
+
+  queueSubArray[port] = queueSub;
+
 }
 
 /************************************
