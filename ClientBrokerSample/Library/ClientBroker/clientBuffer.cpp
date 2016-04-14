@@ -38,7 +38,7 @@ static void sendTask(void *arg) {
     //payload_t toSend;
     xQueueReceive(xSendQueue, &toSend, portMAX_DELAY);
     SerialUSB.println("Received from Queue");
-    SerialUSB.println(*(toSend.port));
+    SerialUSB.println(toSend.port);
     buffMsgs[counter] = toSend;
 
     if(counter >= BUFF_SIZE - 1) {
@@ -83,11 +83,11 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
   // Create send and Receive Tasks  
 }
 
-void clientBuffer::publish(String port, char *Message)
+void clientBuffer::publish(int port, char *Message)
 {
   payload_t payload;
 
-  payload.port = new String(port);
+  payload.port = port;
   payload.appid = _appID;
   payload.pdid = _powerID;
   payload.message = new String(Message);
@@ -329,9 +329,9 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
 
   for (int i = 0; i < BUFF_SIZE; i++) {
     JsonArray& m = msg.createNestedArray();
-    SerialUSB.println(*(buffMsgs[i].port));
+    SerialUSB.println(buffMsgs[i].port);
     SerialUSB.println(*(buffMsgs[i].message));
-    m.add(*(buffMsgs[i].port));
+    m.add(buffMsgs[i].port);
     m.add(*(buffMsgs[i].message));
   }
 
@@ -351,7 +351,6 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
 
   // Free here
   for (int i = 0; i < BUFF_SIZE; i++) {
-    delete (buffMsgs[i].port);
     delete (buffMsgs[i].message);
   }
 
