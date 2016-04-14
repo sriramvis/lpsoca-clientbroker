@@ -173,12 +173,13 @@ void jsonDecode(char json[]) {
   for (JsonArray::iterator it=msgs.begin(); it!=msgs.end(); ++it) {
     JsonVariant val = *it;
     JsonArray& a = val.asArray();
-    int test = a[0];
-    String val2 = a[1];
-    //String *test42 = new String (val2);
-    //String val = *it;
-    SerialUSB.println(test);
-    SerialUSB.println(val2);
+    int port = a[0];
+    //switch-case block for port number here
+    String message_port = a[1];
+    //String *message = new String (message_port);
+    //buffers for string data here
+    SerialUSB.println(port);
+    SerialUSB.println(message_port);
   }
 
 
