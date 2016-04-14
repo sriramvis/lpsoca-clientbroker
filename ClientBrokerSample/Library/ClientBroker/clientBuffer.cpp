@@ -8,6 +8,8 @@
 QueueHandle_t xSendQueue = NULL;
 QueueHandle_t xReceiveQueue = NULL;
 
+QueueHandle_t _receiveQueues[MAX_PORTS];
+
 void jsonDecode(char json[]);
 void jsonAndSend(payload_t buffMsgs[], String pdid, String appid);
 String connectandsend(String data,String path,String servername);
@@ -82,6 +84,11 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
   registerWithServer("192.168.43.12", "3001", appID, powerID);
   xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
   // Create send and Receive Tasks  
+
+  // clear all ports
+  for(int i=0; i < MAX_PORTS; i++){
+    _receiveQueues[i] = NULL;
+  }
 }
 
 void clientBuffer::publish(int port, char *Message)
@@ -99,6 +106,12 @@ void clientBuffer::publish(int port, char *Message)
     // Should never happen though
   }
   SerialUSB.println("Published on Queue");
+}
+
+void clientBuffer::subscribe(int port, QueueHandle_t receiveQueue){
+  if(port < MAX_PORTS){
+    _receiveQueues[port] = receiveQueue;  
+  }
 }
 
 /************************************
@@ -375,6 +388,21 @@ void jsonDecode(char json[]) {
   } else {
     SerialUSB.println("parsed Object:");
     root.printTo(SerialUSB);
+
+    // get msg array
+    JsonArray& msgs = root["msg"];
+    int arraySize = msgs.size();
+    for(int i=0; i<arraySize; i++){
+      JsonArray& m = msgs[i];
+      if(m.size() == 2){ // has both port and message
+        int port = m[0];
+        String message = m[1];
+        SerialUSB.print("port: ");
+        SerialUSB.println(port);
+        SerialUSB.println("message: " + message);
+      }
+    }
+
   }
 
   // JsonArray& ports = root["port"].asArray();
