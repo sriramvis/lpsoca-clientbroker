@@ -16,6 +16,9 @@ void registerWithServer(String serverName, String port, String appId, String due
 static void sendTask(void *arg);
 
 
+static String *_appID;
+static String *_powerID;
+
 #define CAL_FACTOR (F_CPU/7000)
 static void delayMS(uint32_t millis) {
   uint32_t iterations = millis * CAL_FACTOR;
@@ -44,15 +47,13 @@ static void sendTask(void *arg) {
     if(counter >= BUFF_SIZE - 1) {
       counter = 0; // reset counter
       SerialUSB.println("About to call jsonAndSend");
-      jsonAndSend(buffMsgs, *(toSend.pdid), *(toSend.appid));
+      jsonAndSend(buffMsgs, *_powerID, *_appID);
       // Send the messages
     } else {
       SerialUSB.println("Increasing Counter");
       counter++;
     }
-
   }
-
 }
 
 clientBuffer::clientBuffer()
@@ -88,8 +89,6 @@ void clientBuffer::publish(int port, char *Message)
   payload_t payload;
 
   payload.port = port;
-  payload.appid = _appID;
-  payload.pdid = _powerID;
   payload.message = new String(Message);
 
 
