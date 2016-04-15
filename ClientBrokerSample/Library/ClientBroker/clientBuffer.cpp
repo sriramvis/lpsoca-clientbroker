@@ -1,7 +1,7 @@
 #include "clientBuffer.h"
 
 #define QUEUE_SIZE 10
-#define BUFF_SIZE 5 // #number of messages to buffer before sending
+#define BUFF_SIZE 1 // #number of messages to buffer before sending
 #define STACK_SIZE 800
 #define JBUFF_SIZE 500 // Buffer size for JSON decoding
 
