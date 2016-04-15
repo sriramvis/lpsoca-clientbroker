@@ -392,7 +392,7 @@ inline void notifyPortQueue(int port, String message){
 void jsonDecode(char json[]) {
   vDebugln("Entering Json Decoding");
   vDebugln(json);
-  StaticJsonBuffer<500> jsonBuffer;
+  StaticJsonBuffer<1024> jsonBuffer;
   //String ports[10];
   //String messages[10];
   JsonObject& root = jsonBuffer.parseObject(json);
@@ -402,7 +402,7 @@ void jsonDecode(char json[]) {
     return;
   } else {
     vDebugln("parsed Object:");
-    //root.printTo(SerialUSB);
+    root.printTo(SerialUSB);
 
     // get msg array
     JsonArray& msgs = root["msg"];
@@ -412,12 +412,10 @@ void jsonDecode(char json[]) {
       if(m.size() == 2){ // has both port and message
         int port = m[0];
         String message = m[1];
-        notifyPortQueue(port, message);
-        
         vDebug("port: ");
         vDebugln(port);
         vDebugln("message: " + message);
-        
+        notifyPortQueue(port, message);
       }
     }
 
