@@ -17,6 +17,9 @@ class clientBuffer {
         void initialize(String appID, String powerID, String net, String pass);
         void publish(int port, char *message);
         void subscribe(int port, QueueHandle_t queueSub);
+        String getAppID();
+        String getPowerID();
+
 
     protected:
         clientBuffer();

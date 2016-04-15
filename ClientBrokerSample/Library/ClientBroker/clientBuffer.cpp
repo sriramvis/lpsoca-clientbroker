@@ -4,7 +4,7 @@
 #define NUM_PORTS_MAX 16
 #define QUEUE_SIZE 10
 #define BUFF_SIZE 5 // #number of messages to buffer before sending
-#define STACK_SIZE 800
+#define STACK_SIZE 1024
 #define JBUFF_SIZE 400 // Buffer size for JSON decoding
 
 QueueHandle_t xSendQueue = NULL;
@@ -13,9 +13,7 @@ QueueHandle_t xReceiveQueue = NULL;
 static QueueHandle_t queueSubArray[NUM_PORTS_MAX];
 
 void jsonDecode(char json[]);
-void jsonAndSend(payload_t buffMsgs[]);
-//String connectandsend(String data,String path,String servername);
-//void Wifi_init(String Networkname, String password);
+void jsonAndSend(payload_t buffMsgs[], String appID, String powerID);
 static void sendTask(void *arg);
 
 
@@ -28,20 +26,13 @@ static void sendTask(void *arg) {
     payload_t toSend;
 
     while (1) {
-        //SerialUSB.println("Starting While loop in send");
-        //payload_t toSend;
         xQueueReceive(xSendQueue, &toSend, portMAX_DELAY);
-        //SerialUSB.println("Received from Queue");
-        //SerialUSB.println(*(toSend.port));
         buffMsgs[counter] = toSend;
 
         if(counter == BUFF_SIZE - 1) {
             counter = 0; // reset counter
-            //SerialUSB.println("About to call jsonAndSend");
-            jsonAndSend(buffMsgs);
-            // Send the messages
+            jsonAndSend(buffMsgs, clientBuffer::getInstance()->getAppID(), clientBuffer::getInstance()->getPowerID());
         } else {
-            //SerialUSB.println("Increasing Counter");
             counter++;
         }
 
@@ -72,11 +63,16 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
     _appID = new String(appID);
     _powerID = new String(powerID);
     xSendQueue = xQueueCreate(QUEUE_SIZE, sizeof(payload_t));
-    //xReceiveQueue = xQueueCreate(QUEUE_SIZE, sizeof(String));
     Wifi_init(net, pass);
-    xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
-    //initQueueSubArray();
-    // Create send and Receive Tasks	
+    xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);	
+}
+
+String clientBuffer::getAppID() {
+    return *_appID;
+}
+
+String clientBuffer::getPowerID() {
+    return *_powerID;
 }
 
 
@@ -85,28 +81,24 @@ void clientBuffer::publish(int port, char *Message)
     payload_t payload;
 
     payload.port = new String(port);
-    //payload.appid = _appID;
-    //payload.pdid = _powerID;
     payload.message = new String(Message);
 
 
-    if(xQueueSendToBack(xSendQueue, &payload, 0) != pdTRUE) {
+    if(xQueueSendToBack(xSendQueue, &payload, portMAX_DELAY) != pdTRUE) {
         SerialUSB.println("Unable to place on Queue. Queue full");
-        // Deal with this case
-        // If this happens then the queue is full
-        // Should never happen though
     }
-    //SerialUSB.println("Published on Queue");
+    SerialUSB.println("Published on Queue");
 }
 
 void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
-    // Queue takes char*
-    // Make sure char* doesn't get overwritten before its read
-    // Add another method that Will can call 
-    // Create register when they call this
-
     queueSubArray[port] = queueSub; //queueSub handle is created by Will/Cef
-    connectandsend("register", "/register/_appID/_powerID", "10.42.0.1"); //find out exact format from Vinod
+    String port_s = String(port);
+    String toSend = "/register/" + *_appID+"/"+port_s+"/"+*_powerID;
+    SerialUSB.println("About to send register info");
+    SerialUSB.println(toSend);
+    String msgToSend = "{\"darklord\": \"Darkload's Load\"}";
+    //String response = connectandsend(msgToSend, toSend, "54.191.239.210"); //find out exact format from Vinod
+    SerialUSB.println("Finished Sending reg info");
 
 
 }
@@ -115,10 +107,12 @@ void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
  ***** HELPER FUNCTIONS *************/
 
 
-void jsonAndSend(payload_t buffMsgs[]) {
+void jsonAndSend(payload_t buffMsgs[], String appID, String powerID) {
+    SerialUSB.println("jsonAndSend Decode");
     StaticJsonBuffer<JBUFF_SIZE> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     JsonArray& msg = root.createNestedArray("msg");
+    SerialUSB.println("Created json Buffer");
 
     for (int i = 0; i < BUFF_SIZE; i++) {
         JsonArray &m = msg.createNestedArray();
@@ -126,16 +120,15 @@ void jsonAndSend(payload_t buffMsgs[]) {
         m.add(*(buffMsgs[i].message));
     }
 
+    SerialUSB.println("Done with for loop");
+
     char buffer[JBUFF_SIZE];
 
     root.printTo(buffer, sizeof(buffer));
 
-    SerialUSB.println("About to send json up");
-    SerialUSB.println(buffer);
+    String response = connectandsend(String(buffer), "/up/" + appID + "/" + powerID, "54.191.239.210");
 
-    String response = connectandsend(String(buffer), "/power/45", "10.42.0.1");
-
-    // Free here
+    SerialUSB.println("After connect and Send in JSON");
 
     for (int i = 0; i < BUFF_SIZE; i++) {
         delete (buffMsgs[i].port);
@@ -145,7 +138,6 @@ void jsonAndSend(payload_t buffMsgs[]) {
     SerialUSB.println("Received Response. About to decode");
 
     response.toCharArray(buffer, JBUFF_SIZE);
-    SerialUSB.println(buffer);
 
     jsonDecode(buffer);
 
@@ -155,8 +147,6 @@ void jsonDecode(char json[]) {
     SerialUSB.println("Entering Json Decoding");
     SerialUSB.println(json);
     StaticJsonBuffer<500> jsonBuffer;
-    //String ports[10];
-    //String messages[10];
     JsonObject& root = jsonBuffer.parseObject(json);
 
     if (!root.success()) {
@@ -165,28 +155,18 @@ void jsonDecode(char json[]) {
     }
 
     JsonArray& msgs = root["msg"].asArray();
+    int port;
 
-    //String pdid = root["pdid"];
-    //String appid = root["appid"];
-
-    //SerialUSB.println(pdid);
-    //SerialUSB.println(appid);
 
     for (JsonArray::iterator it=msgs.begin(); it!=msgs.end(); ++it) {
         JsonVariant val = *it;
         JsonArray& a = val.asArray();
-        int port = a[0];
-        //switch-case block for port number here
+        port = a[0];
         String message_port = a[1];
         String *message = new String (message_port); //Will be deleted by Cef/Will
-        //buffers for string data here
-        xQueueSendToBack(queueSubArray[port], message, portMAX_DELAY);
-        //SerialUSB.println(port);
-        //SerialUSB.println(message_port);
+        xQueueSendToBack(queueSubArray[port], &message, portMAX_DELAY);
     }
 
-
-    // Need to create hard copies of these extracted items before sending them off
 }
 
 

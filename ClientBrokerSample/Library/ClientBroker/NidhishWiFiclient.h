@@ -29,7 +29,7 @@ String connectandsend(String data,String path,String servername){
      
     }
     i=0;
-    delay(150);
+    //delay(150);
  
   String t1 = "POST "+path+" HTTP/1.1\r\nHost:"+servername+"\r\nContent-Type:application/json\r\nContent-Length:"+String(data.length())+"\r\n";
   SerialUSB.println(data.length());
