@@ -80,7 +80,7 @@ void clientBuffer::publish(int port, char *Message)
 {
     payload_t payload;
 
-    payload.port = new String(port);
+    payload.port = port;
     payload.message = new String(Message);
 
 
@@ -116,7 +116,7 @@ void jsonAndSend(payload_t buffMsgs[], String appID, String powerID) {
 
     for (int i = 0; i < BUFF_SIZE; i++) {
         JsonArray &m = msg.createNestedArray();
-        m.add(*(buffMsgs[i].port));
+        m.add(buffMsgs[i].port);
         m.add(*(buffMsgs[i].message));
     }
 
@@ -126,12 +126,14 @@ void jsonAndSend(payload_t buffMsgs[], String appID, String powerID) {
 
     root.printTo(buffer, sizeof(buffer));
 
+    SerialUSB.print("Message to be sent: ");
+    SerialUSB.println(buffer);
+
     String response = connectandsend(String(buffer), "/up/" + appID + "/" + powerID, "54.191.239.210");
 
     SerialUSB.println("After connect and Send in JSON");
 
     for (int i = 0; i < BUFF_SIZE; i++) {
-        delete (buffMsgs[i].port);
         delete (buffMsgs[i].message);
     }
 
