@@ -65,7 +65,15 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
     xSendQueue = xQueueCreate(QUEUE_SIZE, sizeof(payload_t));
     Wifi_init(net, pass);
     xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);	
+    //String port_s = String(port);
+    String toSend = "/register/" + *_appID+"/"+*_powerID;//tell Vinod to set up for all ports!
+    SerialUSB.println("About to send register info");
+    SerialUSB.println(toSend);
+    String msgToSend = "{\"darklord\": \"Darkload's Load\"}";
+    String response = connectandsend(msgToSend, toSend, "54.191.239.210"); //find out exact format from Vinod
+    SerialUSB.println("Finished Sending reg info");
 }
+
 
 String clientBuffer::getAppID() {
     return *_appID;
@@ -92,15 +100,6 @@ void clientBuffer::publish(int port, char *Message)
 
 void clientBuffer::subscribe(int port, QueueHandle_t queueSub) {
     queueSubArray[port] = queueSub; //queueSub handle is created by Will/Cef
-    String port_s = String(port);
-    String toSend = "/register/" + *_appID+"/"+port_s+"/"+*_powerID;
-    SerialUSB.println("About to send register info");
-    SerialUSB.println(toSend);
-    String msgToSend = "{\"darklord\": \"Darkload's Load\"}";
-    //String response = connectandsend(msgToSend, toSend, "54.191.239.210"); //find out exact format from Vinod
-    SerialUSB.println("Finished Sending reg info");
-
-
 }
 
 /************************************
