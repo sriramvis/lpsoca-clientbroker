@@ -5,7 +5,7 @@
 #define STACK_SIZE 800
 #define JBUFF_SIZE 500 // Buffer size for JSON decoding
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
   #define vDebug(x) SerialUSB.print(x)
   #define vDebugln(x) SerialUSB.println(x)
@@ -90,7 +90,7 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
   xSendQueue = xQueueCreate(QUEUE_SIZE, sizeof(payload_t));
   //xReceiveQueue = xQueueCreate(QUEUE_SIZE, sizeof(String));
   Wifi_init(net, pass);
-  registerWithServer("192.168.43.12", "3001", appID, powerID);
+  registerWithServer("192.168.100.1", "3001", appID, powerID);
   xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
   // Create send and Receive Tasks  
 
@@ -339,7 +339,7 @@ String connectandsend(String data,String path,String servername){
 }
 
 void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
-  StaticJsonBuffer<500> jsonBuffer;
+  StaticJsonBuffer<512> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
 
   // JsonArray& port = root.createNestedArray("port");
@@ -365,7 +365,7 @@ void jsonAndSend(payload_t buffMsgs[], String pdid, String appid) {
   endpoint.concat(pdid);
   endpoint.concat("/");
   endpoint.concat(appid);
-  String response = connectandsend(String(buffer), endpoint, "192.168.43.12");
+  String response = connectandsend(String(buffer), endpoint, "192.168.100.1");
 
   // Free here
   for (int i = 0; i < BUFF_SIZE; i++) {
@@ -462,6 +462,7 @@ void Wifi_init(String Networkname,String password){
   vDebugln("Serial1 begin");
   delayMS(1000);
   Serial1.println("AT+RST");
+  vDebugln("AT+RST");
   while(true){
    if(Serial1.available()){
       a=Serial1.read();
@@ -577,7 +578,7 @@ void Wifi_init(String Networkname,String password){
   }
  again:
  i=0;
- delayMS(150);
+ delayMS(500);
  Serial1.println("AT+CWJAP=\""+Networkname+"\",\""+password+"\"");
  while(true){
    if(Serial1.available()){
