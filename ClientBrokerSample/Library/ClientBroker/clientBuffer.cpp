@@ -187,10 +187,13 @@ void clientBuffer::initialize(String appID, String powerID, String net, String p
     Wifi_init(net, pass);
     xTaskCreate(sendTask, NULL, STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(fillTask, NULL, STACK_SIZE, NULL, 1, NULL);
-    String toSend = "/register/" + *_appID+"/"+*_powerID;//tell Vinod to set up for all ports!
+    /* Note the register call is commented out as for testing we are just
+     * echoing messages sent up the server
+     */
+    //String toSend = "/register/" + *_appID+"/"+*_powerID;
     //SerialUSB.println("About to send register info");
     //SerialUSB.println(toSend);
-    String msgToSend = "{\"darklord\": \"Darklord's Will\"}";
+    //String msgToSend = "{\"darklord\": \"Darklord's Will\"}";
     //String response = connectandsend(msgToSend, toSend, "54.191.239.210"); //find out exact format from Vinod
     //SerialUSB.println("Finished Sending reg info");
 }
