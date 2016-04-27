@@ -7,6 +7,8 @@
 
 typedef struct payload_s {
     int port;
+    int type; // buffered or non buffered
+    int buffer; // which buffer to read from
     String *message;
 } payload_t;
 
@@ -16,9 +18,11 @@ class clientBuffer {
         static clientBuffer *getInstance();
         void initialize(String appID, String powerID, String net, String pass);
         void publish(int port, char *message);
+        void publishNow(int port, char *message);
         void subscribe(int port, QueueHandle_t queueSub);
         String getAppID();
         String getPowerID();
+        //void publishNow(int port, char *message);
 
 
     protected:
