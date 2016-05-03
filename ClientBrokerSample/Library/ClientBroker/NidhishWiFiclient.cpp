@@ -192,6 +192,50 @@ bool getIP(){
       }         
             }
 
+bool setApAutoconnectOn(){
+  int x;
+  Serial1.println("AT+CWAUTOCONN=1");
+  Serial1.flush();
+  String response = Serial1.readStringUntil(Serial1.available());
+  if(response.length() > 2){
+    x = findString("OK", response);
+                           } 
+  else{
+    SerialUSB.println("Wi-Fi setiing AP Autoconnect Timeout!");
+    return false;
+      }
+  if(x != -1){
+    SerialUSB.println("Wi-Fi AP Autoconnect set");
+    return true;   
+             }
+  else{
+    SerialUSB.println("Wi-Fi AP Autoconnect Couldn't set!");
+    return false;
+      }         
+                      }
+
+bool setApAutoconnectOff(){
+  int x;
+  Serial1.println("AT+CWAUTOCONN=0");
+  Serial1.flush();
+  String response = Serial1.readStringUntil(Serial1.available());
+  if(response.length() > 2){
+    x = findString("OK", response);
+                           } 
+  else{
+    SerialUSB.println("Wi-Fi setiing AP Autoconnect Timeout!");
+    return false;
+      }
+  if(x != -1){
+    SerialUSB.println("Wi-Fi AP Autoconnect set");
+    return true;   
+             }
+  else{
+    SerialUSB.println("Wi-Fi AP Autoconnect Couldn't set!");
+    return false;
+      }         
+                      }
+
 String wifiInit(String APname,String APpassword){
 int counter=0;
 wifi_init();
