@@ -17,11 +17,11 @@ bool connectToServer(String servername, int port);
 bool sendDataLength(String tcpHeader, String path, String servername, String data);
 String sendData(String tcpHeader, String data);
 bool closeConnection();
-String connectAndSend(String data, String path, String servername, String datatype, int port);
+String connectAndSend(String data, String path, String servername, String datatype, int port, String* res);
 String sendAndReceive(String data, String path, String servername, String datatype);
 bool sleep(int time);
 bool wakeup();
-String wakeupSendSleep(String APname,String APpassword,String data,String path,String servername,String datatype,int port);
+String wakeupSendSleep(String APname,String APpassword,String data,String path,String servername,String datatype,int port, String* res);
 String connectSendSend(String data, String path, String servername, String datatype, int port);
 
 #endif
