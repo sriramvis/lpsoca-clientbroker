@@ -12,6 +12,8 @@ bool setWifiConnectionMode();
 bool disconnectFromAP();
 bool connectToAP(String APname,String APpassword);
 bool getIP();
+bool setApAutoconnectOn();
+bool setApAutoconnectOff();
 String wifiInit(String APname,String APpassword);
 bool connectToServer(String servername, int port);
 bool sendDataLength(String tcpHeader, String path, String servername, String data);
